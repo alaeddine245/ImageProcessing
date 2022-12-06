@@ -134,12 +134,37 @@ class PpmOperations:
         lx, ly = [int(c) for c in image.readline().split()]
         max_pixel = int(image.readline().strip())
         byte_list = image.read()
-        image_mat =  np.flip(np.array(list(byte_list)).reshape(-1,3), axis=1)
+        image_mat =  np.array(list(byte_list)).reshape((ly,lx, 3))
         image.close()
         return Ppm(format_, comment, lx,ly,max_pixel, image_mat)
-    def threshhold(self, image, thresh, cond):
+    def threshhold(self, ppm, thresh, cond):
         R,G,B = thresh
-        return image
+        image_red = np.where(ppm.image_mat[:,:,0] >= thresh[0], 255,0)
+        image_green = np.where(ppm.image_mat[:,:,1] >= thresh[1], 255,0)
+        image_blue = np.where(ppm.image_mat[:,:,2] >= thresh[2], 255,0)
+        ppm_copy = copy.deepcopy(ppm)
+        if cond=='AND':
+            ppm_copy.image_mat = np.bitwise_and(image_red, image_green, image_blue)
+        elif cond =='OR':
+            ppm_copy.image_mat = np.bitwise_or(image_red, image_green, image_blue)
+        return ppm_copy
+    def histogram(self, pgm, channel):
+        histogram=[]
+        for i in range(pgm.max_pixel+1):
+            histogram.append(0)
+        for arr in pgm.image_mat[:,:,channel]:
+            for el in arr:
+                histogram[el]+=1
+        return np.array(histogram)
+    def draw_histogram(self, ppm):
+        histogram_red = self.histogram(ppm, 0)
+        histogram_green = self.histogram(ppm, 1)
+        histogram_blue = self.histogram(ppm, 2)
+        plt.plot(range(256), histogram_red, 'r')
+        plt.plot(range(256), histogram_green, 'g')
+        plt.plot(range(256), histogram_blue, 'b')
+        plt.show()
+
     def show(self, ppm):
         plt.imshow(ppm)
         plt.show()
