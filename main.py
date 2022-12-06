@@ -138,7 +138,6 @@ class PpmOperations:
         image.close()
         return Ppm(format_, comment, lx,ly,max_pixel, image_mat)
     def threshhold(self, ppm, thresh, cond):
-        R,G,B = thresh
         image_red = np.where(ppm.image_mat[:,:,0] >= thresh[0], 255,0)
         image_green = np.where(ppm.image_mat[:,:,1] >= thresh[1], 255,0)
         image_blue = np.where(ppm.image_mat[:,:,2] >= thresh[2], 255,0)
@@ -164,35 +163,53 @@ class PpmOperations:
         plt.plot(range(256), histogram_green, 'g')
         plt.plot(range(256), histogram_blue, 'b')
         plt.show()
-
+    def class_average(self, cl, start, end):
+        niv = np.arange(start, end)
+        return np.sum(cl * niv) / np.sum(cl)
+    def get_variance(self,hist, s):
+        c0 = hist[:s]
+        c1 = hist[s:]
+        pc0 = np.sum(c0) / np.sum(hist)
+        pc1 = np.sum(c1) / np.sum(hist)
+        m = self.class_average(hist, 0, 256)
+        m0 = self.class_average(c0, 0, s)
+        m1 = self.class_average(c1, s, 256)
+        return pc0 * (m0 - m)**2 + pc1 * (m1 - m)**2
+    def otsu_thresholding(self,hist):
+        max_variance = 0
+        seuil = 0
+        for s in range(1, 254):
+            variance = self.get_variance(hist, s)
+            if variance > max_variance:
+                max_variance = variance
+                seuil = s
+        return seuil
+    def erosion(self,ppm, level):
+        ppm_copy = copy.deepcopy(ppm)
+        image = ppm.image_mat
+        image_h, image_w = image.shape
+        output = np.zeros_like(image)
+        for y in range(image_h - level + 1):
+            for x in range(image_w - level + 1):
+                eroded_pixel = np.min(image[y:y + level, x:x + level])
+                output[y, x] = eroded_pixel
+        ppm_copy.image_mat = output
+        return ppm_copy
+    def dilatation(self,ppm, level):
+        ppm_copy = copy.deepcopy(ppm)
+        image = ppm.image_mat
+        image_h, image_w = image.shape
+        output = np.zeros_like(image)
+        for y in range(image_h - level + 1):
+            for x in range(image_w - level + 1):
+                dilated_pixel = np.max(image[y:y + level, x:x + level])
+                output[y, x] = dilated_pixel
+        ppm_copy.image_mat = output
+        return ppm_copy
+    def ouverture(self, ppm, level):
+        return self.dilatation(self.erosion(ppm, level), level)
+    def fermeture(self, ppm, level):
+        return self.erosion(self.dilatation(ppm, level), level)
     def show(self, ppm):
         plt.imshow(ppm)
         plt.show()
-
-
-"""   
-pgm_ops = PgmOperations()
-ppm_ops = PpmOperations()
-pgm = pgm_ops.read("chat.pgm")
-ppm = ppm_ops.read('chat.ppm')
-print(ppm)
-new_ppm = ppm_ops.threshhold(ppm, (100,100,100), 'OR')
-ppm_ops.show(new_ppm.astype(float))
-
-
-
-
-print(pgm.get_pgm_values())
-print(pgm_ops.moyenne(pgm))
-print(pgm_ops.ecart_type(pgm))
-print(pgm_ops.histogram(pgm))
-print(pgm_ops.histogram_cumul(pgm))
-print(pgm_ops.histogram_egalise(pgm))
-print(pgm_ops.show(pgm_ops.noise(pgm)))
-print(pgm_ops.show(pgm_ops.mean_filter(pgm_ops.noise(pgm), n=3)))
-print(pgm_ops.get_SNB(pgm, pgm_ops.noise(pgm)))
-print(pgm_ops.get_SNB(pgm, pgm_ops.median_filter(pgm_ops.noise(pgm), n=3)))
-print(pgm_ops.get_SNB(pgm, pgm_ops.mean_filter(pgm_ops.noise(pgm), n=3)))
-print(pgm_ops.show(pgm_ops.median_filter(pgm_ops.noise(pgm), n=3)))
-"""
-#pgm_ops.write(pgm, "new.pgm")
