@@ -2,7 +2,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import copy
-import cv2
+
+
 class pnm:
     def __init__(self, format_, comment, lx,ly,max_pixel, image_mat):
         self.format_= format_
@@ -147,18 +148,54 @@ class PpmOperations:
         elif cond =='OR':
             ppm_copy.image_mat = np.bitwise_or(image_red, image_green, image_blue)
         return ppm_copy
-    def histogram(self, pgm, channel):
+    def histogram(self, ppm, channel):
         histogram=[]
-        for i in range(pgm.max_pixel+1):
+        for i in range(ppm.max_pixel+1):
             histogram.append(0)
-        for arr in pgm.image_mat[:,:,channel]:
+        for arr in ppm.image_mat[:,:,channel]:
             for el in arr:
                 histogram[el]+=1
         return np.array(histogram)
+    def histogram_cumule(self, ppm, channel):
+        histogram = self.histogram(ppm, channel)
+        for i in range(1,ppm.max_pixel+1):
+            histogram[i]=histogram[i]+histogram[i-1]
+        return np.array(histogram)
+    def histogram_egalise(self, ppm, channel):
+        histogram = self.histogram(ppm, channel)
+        histogram_cum = self.histogram_cumule(ppm, channel)
+        proba = histogram_cum / (ppm.lx*ppm.ly)
+        n1 = np.floor(255*proba).astype(int)
+        j=0
+        result = np.zeros((256,))
+        for el in n1:
+            result[el]+=histogram[j]
+            j+=1
+        return result
+    
     def draw_histogram(self, ppm):
         histogram_red = self.histogram(ppm, 0)
         histogram_green = self.histogram(ppm, 1)
         histogram_blue = self.histogram(ppm, 2)
+        plt.title('Histogramme')
+        plt.plot(range(256), histogram_red, 'r')
+        plt.plot(range(256), histogram_green, 'g')
+        plt.plot(range(256), histogram_blue, 'b')
+        plt.show()
+    def draw_histogram_cumule(self, ppm):
+        histogram_red = self.histogram_cumule(ppm, 0)
+        histogram_green = self.histogram_cumule(ppm, 1)
+        histogram_blue = self.histogram_cumule(ppm, 2)
+        plt.title('Histogramme cumulé')
+        plt.plot(range(256), histogram_red, 'r')
+        plt.plot(range(256), histogram_green, 'g')
+        plt.plot(range(256), histogram_blue, 'b')
+        plt.show()
+    def draw_histogram_egalise(self, ppm):
+        histogram_red = self.histogram_egalise(ppm,0)
+        histogram_green = self.histogram_egalise(ppm,1)
+        histogram_blue = self.histogram_egalise(ppm,2)
+        plt.title('Histogramme egalisé')
         plt.plot(range(256), histogram_red, 'r')
         plt.plot(range(256), histogram_green, 'g')
         plt.plot(range(256), histogram_blue, 'b')
