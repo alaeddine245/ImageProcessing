@@ -42,6 +42,7 @@ def browseFiles():
                                                         "*.pgm"),
                                                        ("PPM Files",
                                                         "*.ppm")))
+                                                        
     if path.split('.')[-1] == 'pgm':
         ppm=None
         pgm=pgm_ops.read(path)
@@ -53,12 +54,21 @@ def browseFiles():
         show()   
 
 def save_file():
-    pass
+    global pgm, ppm
+    if pgm:
+        path = filedialog.asksaveasfilename(defaultextension='.pgm')
+        pgm_ops.write(pgm, path)
+    if ppm:
+        path = filedialog.asksaveasfilename(defaultextension='.ppm')
+        ppm_ops.write(ppm, path)
+
+
 def mean():
     global pgm, prev_pgm
+    level = int(show_popup())
     if pgm:
         prev_pgm = pgm
-        pgm = pgm_ops.mean_filter(pgm, 3)
+        pgm = pgm_ops.mean_filter(pgm, level)
         show()
 def noise():
     global pgm, prev_pgm
@@ -68,9 +78,10 @@ def noise():
         show()
 def median():
     global pgm, prev_pgm
+    level = int(show_popup())
     if pgm:
         prev_pgm = pgm
-        pgm = pgm_ops.median_filter(pgm, 3)
+        pgm = pgm_ops.median_filter(pgm, level)
         show()
 def undo():
     global pgm, prev_pgm, prev_ppm, ppm
@@ -108,29 +119,58 @@ def threshhold_and():
 def threshhold_or():
     threshhold('OR')
 
+
+class EntryPopup(tk.Frame):
+    def __init__(self,out_value:list,parent,*args,**kwargs):
+        self.value = out_value
+        super().__init__(master=parent,*args,**kwargs)
+        self.toplevel = tk.Toplevel(parent)
+        self.toplevel.title('Level')
+        self.entry = tk.Entry(master=self.toplevel)
+        self.entry.pack()
+        tk.Button(text="Submit",master=self.toplevel,command=self.save_and_destroy).pack()
+        self.toplevel.protocol("WM_DELETE_WINDOW",self.save_and_destroy)
+    def save_value(self):
+        self.value.append(self.entry.get())
+    def save_and_destroy(self):
+        self.save_value()
+        self.toplevel.destroy()
+
+def show_popup() -> str:
+    val = []
+    x = EntryPopup(val,root)
+    x.toplevel.wait_window()
+    return val[-1]
+  
+
 def erode():
+    
     global ppm, prev_ppm
+    level = int(show_popup())
     if ppm:
         prev_ppm = ppm
-        ppm = ppm_ops.erosion(ppm, 3)
+        ppm = ppm_ops.erosion(ppm, level)
         show()
 def delate():
     global ppm, prev_ppm
+    level = int(show_popup())
     if ppm:
         prev_ppm = ppm
-        ppm = ppm_ops.dilatation(ppm, 3)
+        ppm = ppm_ops.dilatation(ppm, level)
         show()
 def closing():
     global ppm, prev_ppm
+    level = int(show_popup())
     if ppm:
         prev_ppm = ppm
-        ppm = ppm_ops.fermeture(ppm, 3)
+        ppm = ppm_ops.fermeture(ppm, level)
         show()
 def opening():
     global ppm, prev_ppm
+    level = int(show_popup())
     if ppm:
         prev_ppm = ppm
-        ppm = ppm_ops.fermeture(ppm, 3)
+        ppm = ppm_ops.fermeture(ppm, level)
         show()
 def histogram():
     global ppm, pgm
@@ -155,7 +195,7 @@ root.config(menu=menu)
 file_menu = Menu(menu)
 menu.add_cascade(label='File', menu=file_menu)
 file_menu.add_command(label='Open...', command=browseFiles)
-file_menu.add_command(label='Save')
+file_menu.add_command(label='Save', command=save_file)
 file_menu.add_separator()
 file_menu.add_command(label='Exit', command=root.quit)
 edit_menu = Menu(menu)

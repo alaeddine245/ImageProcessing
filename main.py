@@ -129,15 +129,32 @@ class PgmOperations:
 
 class PpmOperations:
     def read(self, path):
+
         image = open(path, 'rb')
+        
         format_ = image.readline().strip()
         comment = image.readline().strip()
         lx, ly = [int(c) for c in image.readline().split()]
         max_pixel = int(image.readline().strip())
-        byte_list = image.read()
-        image_mat =  np.array(list(byte_list)).reshape((ly,lx, 3))
+        pixels_list = image.read()
+        print(format_)
+        image_mat = None
+        if format_== b'P3':
+            image_mat = np.array([int(c) for c in pixels_list.strip().split() ]).reshape((ly,lx, 3))
+        elif format_ == b'P6':    
+            image_mat =  np.array(list(pixels_list)).reshape((ly,lx, 3))
         image.close()
         return Ppm(format_, comment, lx,ly,max_pixel, image_mat)
+    def write(self, ppm, path):
+        image= open(path, "w")
+        image.write('P3\n')
+        image.write(ppm.comment.decode() + '\n')
+        
+        image.write(str(ppm.lx)+ ' '+ str(ppm.ly) + '\n')
+        image.write(str(ppm.max_pixel) + '\n')
+
+        np.savetxt(image, ppm.image_mat.flatten(), fmt = '%d', delimiter=' ', header= '', comments='')
+        image.close()
     def threshhold(self, ppm, thresh, cond):
         image_red = np.where(ppm.image_mat[:,:,0] >= thresh[0], 255,0)
         image_green = np.where(ppm.image_mat[:,:,1] >= thresh[1], 255,0)
