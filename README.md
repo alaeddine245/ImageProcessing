@@ -4,7 +4,7 @@ A simple library coded from scratch for performing different operations on PGM/P
 The operations include:
 - Desplaying histogram, cumulative histogram, equalized histogram
 - Applying filters: mean filter, median filter, high passing filter
-- Appliying saturation and equalization
+- Applying saturation and equalization
 - Applying morphological operations: Dilation, Erosion, Opening, closing
 - Automatic thresholding using Otsu algorithm
 - Adding noise
